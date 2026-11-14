@@ -2,155 +2,578 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Monograph</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
+
         :root {
-            --bg-color: #f4f1ea; --paper-color: #fdfcf8; --text-color: #2c2c2c; --accent-color: #8b4513; --key-bg: #e0dcd3; --key-shadow: #b0aba2; --key-active: #d0ccc3;
+            --bg-dark: #1a1a1a;
+            --bg-light: #e8e6e1;
+            --paper: #fdfcf8;
+            --text: #2c2c2c;
+            --accent: #d9381e;
+            --key-bg: #f0ede6;
+            --key-shadow: #b0aba2;
+            --key-active: #d0ccc3;
+            --spotlight: rgba(255, 200, 100, 0.15);
+            --toolbar-bg: #e0dcd3;
         }
-        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+
+        .night-mode {
+            --bg-light: #0a0a0a;
+            --paper: #1e1e1e;
+            --text: #d4d4d4;
+            --key-bg: #2a2a2a;
+            --key-shadow: #111;
+            --key-active: #3a3a3a;
+            --spotlight: rgba(255, 150, 50, 0.1);
+            --toolbar-bg: #151515;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier Prime', monospace;
+        }
+
         body {
-            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color);
-            font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column;
-            height: 100vh; overflow: hidden; transition: background-color 0.3s;
+            background-color: var(--bg-light);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.5s, color 0.5s;
         }
-        body.night-mode { --bg-color: #1a1a1a; --paper-color: #222; --text-color: #ffcc00; --key-bg: #333; --key-shadow: #111; }
-        #paper-container {
-            flex: 1; overflow-y: auto; padding: 20px 15px 150px 15px;
-            background-color: var(--paper-color); margin: 10px; border-radius: 8px;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.1); transition: background-color 0.3s;
-            display: flex; flex-direction: column-reverse;
+
+        /* Night Light Spotlight Effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 50% 40%, transparent 20%, var(--spotlight) 100%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 10;
         }
-        #text-content {
-            white-space: pre-wrap; word-wrap: break-word; outline: none; font-size: 1.2rem;
-            line-height: 1.6; flex-grow: 1; min-height: 100%; caret-color: var(--accent-color);
+        .night-mode::after { opacity: 1; }
+
+        /* Top Toolbar */
+        #toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--toolbar-bg);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            z-index: 20;
+            transition: background-color 0.5s;
         }
-        #text-content:empty:before { content: "Start typing..."; color: #999; pointer-events: none; }
+
+        .toolbar-btn {
+            background: none;
+            border: 1px solid var(--text);
+            color: var(--text);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toolbar-btn:active { background: var(--text); color: var(--bg-light); }
+
+        /* Paper Container */
+        #paper-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        #paper {
+            width: 100%;
+            max-width: 600px;
+            height: 100%;
+            background-color: var(--paper);
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1), inset 0 0 40px rgba(0,0,0,0.02);
+            padding: 30px 20px 150px 20px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            position: relative;
+            transition: background-color 0.5s;
+        }
+
+        #paper::-webkit-scrollbar { width: 0; }
+
+        #text-area {
+            width: 100%;
+            min-height: 100%;
+            outline: none;
+            font-size: 1.25rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: var(--text);
+            transition: color 0.5s;
+        }
+
+        /* Blinking Cursor */
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: var(--accent);
+            vertical-align: bottom;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Keyboard Container */
         #keyboard {
-            position: fixed; bottom: 0; left: 0; right: 0; background: var(--key-bg);
-            padding: 8px 5px 20px 5px; display: flex; flex-direction: column; gap: 6px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.1); transition: transform 0.3s, background 0.3s;
-            z-index: 100; border-top: 2px solid var(--key-shadow);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--key-bg);
+            padding: 8px 4px 25px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+            transition: background-color 0.5s, transform 0.3s;
+            border-top: 2px solid var(--key-shadow);
         }
-        .key-row { display: flex; justify-content: center; gap: 5px; padding: 0 5px; }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 0 4px;
+        }
+
         .key {
-            background: var(--paper-color); border-radius: 6px; border: 1px solid var(--key-shadow);
-            box-shadow: 0 3px 0 var(--key-shadow); color: var(--text-color); font-family: 'Courier New', monospace;
-            font-size: 1.1rem; font-weight: bold; height: 45px; flex: 1; max-width: 60px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: all 0.05s; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+            background: var(--paper);
+            border-radius: 6px;
+            border: 1px solid var(--key-shadow);
+            box-shadow: 0 3px 0 var(--key-shadow);
+            color: var(--text);
+            font-size: 1.1rem;
+            font-weight: bold;
+            height: 48px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.05s;
+            touch-action: manipulation;
         }
-        .key:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
-        .key.special { background: var(--bg-color); font-size: 0.9rem; flex: 1.5; }
-        .key.space { flex: 3; max-width: none; }
-        #toolbar { display: flex; justify-content: space-between; padding: 10px 15px; background: var(--bg-color); }
-        .btn {
-            background: var(--paper-color); border: 1px solid var(--key-shadow); padding: 8px 16px;
-            border-radius: 20px; font-family: monospace; font-weight: bold; color: var(--text-color);
-            cursor: pointer; box-shadow: 0 2px 0 var(--key-shadow); font-size: 0.9rem;
+
+        .key:active, .key.pressed {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 var(--key-shadow);
+            background: var(--key-active);
         }
-        .btn:active { transform: translateY(1px); box-shadow: none; }
+
+        .key.special { background: var(--toolbar-bg); font-size: 0.9rem; flex: 1.5; }
+        .key.space { flex: 4; }
+        .key.hidden { opacity: 0; pointer-events: none; }
+
+        /* The Box Modal */
+        #box-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #box-modal.active { opacity: 1; pointer-events: all; }
+
+        .modal-content {
+            background: var(--paper);
+            width: 90%;
+            max-width: 400px;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--key-shadow);
+            padding-bottom: 10px;
+        }
+
+        .modal-header h2 { font-size: 1.2rem; }
+
+        #box-list {
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .box-item {
+            background: var(--bg-light);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--key-shadow);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: transform 0.1s;
+            display: flex;
+            flex-direction: column;
+        }
+        .box-item:active { transform: scale(0.98); }
+        .box-item-title { font-weight: bold; font-size: 0.8rem; color: var(--accent); margin-bottom: 5px; }
+        .box-item-text { opacity: 0.8; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
     </style>
 </head>
 <body>
-    <div id="toolbar">
-        <button class="btn" id="night-mode-btn">💡 Night Light</button>
-        <button class="btn" id="clear-btn">🗑️ Clear</button>
-    </div>
-    <div id="paper-container">
-        <div id="text-content" contenteditable="true" spellcheck="false"></div>
-    </div>
-    <div id="keyboard">
-        <div class="key-row">
-            <div class="key" data-key="q">q</div><div class="key" data-key="w">w</div><div class="key" data-key="e">e</div>
-            <div class="key" data-key="r">r</div><div class="key" data-key="t">t</div><div class="key" data-key="y">y</div>
-            <div class="key" data-key="u">u</div><div class="key" data-key="i">i</div><div class="key" data-key="o">o</div>
-            <div class="key" data-key="p">p</div>
-        </div>
-        <div class="key-row">
-            <div class="key" data-key="a">a</div><div class="key" data-key="s">s</div><div class="key" data-key="d">d</div>
-            <div class="key" data-key="f">f</div><div class="key" data-key="g">g</div><div class="key" data-key="h">h</div>
-            <div class="key" data-key="j">j</div><div class="key" data-key="k">k</div><div class="key" data-key="l">l</div>
-        </div>
-        <div class="key-row">
-            <div class="key special" data-key="shift">⇧</div>
-            <div class="key" data-key="z">z</div><div class="key" data-key="x">x</div><div class="key" data-key="c">c</div>
-            <div class="key" data-key="v">v</div><div class="key" data-key="b">b</div><div class="key" data-key="n">n</div>
-            <div class="key" data-key="m">m</div>
-            <div class="key special" data-key="backspace">⌫</div>
-        </div>
-        <div class="key-row">
-            <div class="key special" data-key="123">123</div>
-            <div class="key space" data-key=" "> </div>
-            <div class="key special" data-key="return">↵</div>
-        </div>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const content = document.getElementById('text-content');
-            const paperContainer = document.getElementById('paper-container');
-            const keys = document.querySelectorAll('.key');
-            const nightBtn = document.getElementById('night-mode-btn');
-            const clearBtn = document.getElementById('clear-btn');
-            let isShift = false;
 
-            function triggerFeedback() {
-                if (navigator.vibrate) navigator.vibrate(10);
-                try {
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'square';
-                    oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-                    oscillator.start();
-                    oscillator.stop(audioCtx.currentTime + 0.05);
-                } catch (e) {}
+    <!-- Top Toolbar -->
+    <div id="toolbar">
+        <button class="toolbar-btn" id="box-btn">📦 The Box</button>
+        <div style="font-weight: bold; font-size: 0.9rem; letter-spacing: 1px;">MONOGRAPH</div>
+        <button class="toolbar-btn" id="night-btn">💡 Light</button>
+    </div>
+
+    <!-- Paper Area -->
+    <div id="paper-wrapper">
+        <div id="paper">
+            <div id="text-area" contenteditable="true" spellcheck="false"></div>
+        </div>
+    </div>
+
+    <!-- Keyboard -->
+    <div id="keyboard">
+        <!-- Letters -->
+        <div id="layout-letters">
+            <div class="key-row">
+                <div class="key" data-key="q">q</div><div class="key" data-key="w">w</div><div class="key" data-key="e">e</div>
+                <div class="key" data-key="r">r</div><div class="key" data-key="t">t</div><div class="key" data-key="y">y</div>
+                <div class="key" data-key="u">u</div><div class="key" data-key="i">i</div><div class="key" data-key="o">o</div>
+                <div class="key" data-key="p">p</div>
+            </div>
+            <div class="key-row" style="padding: 0 15px;">
+                <div class="key" data-key="a">a</div><div class="key" data-key="s">s</div><div class="key" data-key="d">d</div>
+                <div class="key" data-key="f">f</div><div class="key" data-key="g">g</div><div class="key" data-key="h">h</div>
+                <div class="key" data-key="j">j</div><div class="key" data-key="k">k</div><div class="key" data-key="l">l</div>
+            </div>
+            <div class="key-row">
+                <div class="key special" data-key="shift" style="flex: 1.5;">⇧</div>
+                <div class="key" data-key="z">z</div><div class="key" data-key="x">x</div><div class="key" data-key="c">c</div>
+                <div class="key" data-key="v">v</div><div class="key" data-key="b">b</div><div class="key" data-key="n">n</div>
+                <div class="key" data-key="m">m</div>
+                <div class="key special" data-key="backspace" style="flex: 1.5;">⌫</div>
+            </div>
+            <div class="key-row">
+                <div class="key special" data-key="123" style="flex: 1.5;">123</div>
+                <div class="key space" data-key=" ">space</div>
+                <div class="key special" data-key="return" style="flex: 1.5;">↵</div>
+            </div>
+        </div>
+
+        <!-- Numbers & Symbols -->
+        <div id="layout-numbers" style="display: none;">
+            <div class="key-row">
+                <div class="key" data-key="1">1</div><div class="key" data-key="2">2</div><div class="key" data-key="3">3</div>
+                <div class="key" data-key="4">4</div><div class="key" data-key="5">5</div><div class="key" data-key="6">6</div>
+                <div class="key" data-key="7">7</div><div class="key" data-key="8">8</div><div class="key" data-key="9">9</div>
+                <div class="key" data-key="0">0</div>
+            </div>
+            <div class="key-row">
+                <div class="key" data-key="-">-</div><div class="key" data-key="/">/</div><div class="key" data-key=":">:</div>
+                <div class="key" data-key=";">;</div><div class="key" data-key="(">(</div><div class="key" data-key=")">)</div>
+                <div class="key" data-key="$">$</div><div class="key" data-key="&">&amp;</div><div class="key" data-key="@">@</div>
+                <div class="key" data-key='"'>"</div>
+            </div>
+            <div class="key-row">
+                <div class="key special" data-key="ABC" style="flex: 1.5;">ABC</div>
+                <div class="key" data-key=".">.</div><div class="key" data-key=",">,</div><div class="key" data-key="?">?</div>
+                <div class="key" data-key="!">!</div><div class="key" data-key="'">'</div>
+                <div class="key special" data-key="backspace" style="flex: 1.5;">⌫</div>
+            </div>
+            <div class="key-row">
+                <div class="key special" data-key="symbols" style="flex: 1.5;">#+=</div>
+                <div class="key space" data-key=" ">space</div>
+                <div class="key special" data-key="return" style="flex: 1.5;">↵</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Box Modal -->
+    <div id="box-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>The Box</h2>
+                <button class="toolbar-btn" id="close-box">Close</button>
+            </div>
+            <div id="box-list">
+                <!-- Saved notes will appear here -->
+            </div>
+            <button class="toolbar-btn" id="save-to-box" style="margin-top: 15px; padding: 12px; background: var(--accent); color: white; border: none;">Save Current Draft</button>
+        </div>
+    </div>
+
+    <script>
+        // --- STATE & DOM ELEMENTS ---
+        const textArea = document.getElementById('text-area');
+        const paper = document.getElementById('paper');
+        const nightBtn = document.getElementById('night-btn');
+        const boxBtn = document.getElementById('box-btn');
+        const boxModal = document.getElementById('box-modal');
+        const closeBoxBtn = document.getElementById('close-box');
+        const boxList = document.getElementById('box-list');
+        const saveToBoxBtn = document.getElementById('save-to-box');
+        const layoutLetters = document.getElementById('layout-letters');
+        const layoutNumbers = document.getElementById('layout-numbers');
+        
+        let isShift = false;
+        let currentLayout = 'letters';
+        let audioCtx = null;
+
+        // --- AUDIO SYNTHESIS (MECHANICAL CLICK & DING) ---
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playClickSound(type = 'normal') {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            if (type === 'return') {
+                // Typewriter carriage return "ding"
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else {
+                // Mechanical clack
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        // --- HAPTICS (CAPACITOR FALLBACK) ---
+        function triggerHaptics() {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
+                window.Capacitor.Plugins.Haptics.impact({ style: 'LIGHT' });
+            } else if (navigator.vibrate) {
+                navigator.vibrate(10);
+            }
+        }
+
+        // --- TYPING ENGINE ---
+        function insertText(text) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            const textNode = document.createTextNode(text);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            saveDraft();
+            scrollToBottom();
+        }
+
+        function deleteText() {
+            document.execCommand('delete', false, null);
+            saveDraft();
+        }
+
+        function scrollToBottom() {
+            paper.scrollTop = paper.scrollHeight;
+        }
+
+        // --- KEYBOARD LOGIC ---
+        document.querySelectorAll('.key').forEach(key => {
+            const handlePress = (e) => {
+                e.preventDefault();
+                initAudio();
+                triggerHaptics();
+                
+                const val = key.getAttribute('data-key');
+                key.classList.add('pressed');
+                setTimeout(() => key.classList.remove('pressed'), 100);
+
+                if (val === 'shift') {
+                    isShift = !isShift;
+                    updateKeyLabels();
+                    return;
+                }
+                if (val === 'backspace') { deleteText(); playClickSound(); return; }
+                if (val === 'return') { insertText('\n'); playClickSound('return'); return; }
+                if (val === ' ') { insertText(' '); playClickSound(); return; }
+                
+                if (val === '123') {
+                    layoutLetters.style.display = 'none';
+                    layoutNumbers.style.display = 'flex';
+                    currentLayout = 'numbers';
+                    return;
+                }
+                if (val === 'ABC' || val === 'symbols') {
+                    layoutLetters.style.display = 'flex';
+                    layoutNumbers.style.display = 'none';
+                    currentLayout = 'letters';
+                    return;
+                }
+
+                // Handle characters
+                let char = val;
+                if (isShift && char.match(/[a-z]/i)) {
+                    char = char.toUpperCase();
+                    isShift = false;
+                    updateKeyLabels();
+                }
+                insertText(char);
+                playClickSound();
+            };
+
+            key.addEventListener('touchstart', handlePress);
+            key.addEventListener('mousedown', handlePress);
+        });
+
+        function updateKeyLabels() {
+            document.querySelectorAll('#layout-letters .key[data-key]').forEach(k => {
+                const val = k.getAttribute('data-key');
+                if (val.length === 1 && val.match(/[a-z]/i)) {
+                    k.textContent = isShift ? val.toUpperCase() : val.toLowerCase();
+                }
+            });
+        }
+
+        // Prevent default mobile keyboard from opening
+        textArea.addEventListener('focus', (e) => {
+            textArea.blur();
+        });
+        
+        // Allow clicking anywhere on paper to focus and scroll to bottom
+        paper.addEventListener('click', () => {
+            textArea.focus();
+            scrollToBottom();
+        });
+
+        // --- THE BOX (STORAGE & MODAL) ---
+        function saveDraft() {
+            localStorage.setItem('monograph_current', textArea.innerText);
+        }
+
+        function loadDraft() {
+            const saved = localStorage.getItem('monograph_current');
+            if (saved) {
+                textArea.innerText = saved;
+            }
+            scrollToBottom();
+        }
+
+        boxBtn.addEventListener('click', () => {
+            renderBox();
+            boxModal.classList.add('active');
+        });
+
+        closeBoxBtn.addEventListener('click', () => {
+            boxModal.classList.remove('active');
+        });
+
+        saveToBoxBtn.addEventListener('click', () => {
+            const text = textArea.innerText.trim();
+            if (!text) return alert("Nothing to save!");
+            
+            const archives = JSON.parse(localStorage.getItem('monograph_box') || '[]');
+            const date = new Date().toLocaleString();
+            archives.unshift({ id: Date.now(), date, text });
+            localStorage.setItem('monograph_box', JSON.stringify(archives));
+            
+            textArea.innerText = '';
+            saveDraft();
+            boxModal.classList.remove('active');
+            alert("Saved to The Box!");
+        });
+
+        function renderBox() {
+            const archives = JSON.parse(localStorage.getItem('monograph_box') || '[]');
+            boxList.innerHTML = '';
+            
+            if (archives.length === 0) {
+                boxList.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.5;">Your box is empty.</div>';
+                return;
             }
 
-            keys.forEach(key => {
-                const handleKeyPress = (e) => {
-                    e.preventDefault();
-                    triggerFeedback();
-                    const keyVal = key.getAttribute('data-key');
-                    if (keyVal === 'shift') {
-                        isShift = !isShift;
-                        keys.forEach(k => {
-                            const kv = k.getAttribute('data-key');
-                            if (kv.length === 1 && kv.match(/[a-z]/i)) {
-                                k.textContent = isShift ? kv.toUpperCase() : kv.toLowerCase();
-                            }
-                        });
-                    } else if (keyVal === 'backspace') {
-                        document.execCommand('delete', false, null);
-                    } else if (keyVal === 'return') {
-                        document.execCommand('insertText', false, '\n');
-                    } else if (keyVal === ' ') {
-                        document.execCommand('insertText', false, ' ');
-                    } else {
-                        let char = keyVal;
-                        if (isShift) { char = char.toUpperCase(); isShift = false; }
-                        document.execCommand('insertText', false, char);
+            archives.forEach(note => {
+                const div = document.createElement('div');
+                div.className = 'box-item';
+                div.innerHTML = `
+                    <div class="box-item-title">${note.date}</div>
+                    <div class="box-item-text">${note.text.substring(0, 60)}...</div>
+                `;
+                div.addEventListener('click', () => {
+                    if (confirm("Load this note? Current draft will be lost.")) {
+                        textArea.innerText = note.text;
+                        saveDraft();
+                        boxModal.classList.remove('active');
+                        scrollToBottom();
                     }
-                    localStorage.setItem('monograph_draft', content.innerText);
-                    paperContainer.scrollTop = paperContainer.scrollHeight;
-                };
-                key.addEventListener('touchstart', handleKeyPress);
-                key.addEventListener('mousedown', handleKeyPress);
+                });
+                boxList.appendChild(div);
             });
+        }
 
-            nightBtn.addEventListener('click', () => document.body.classList.toggle('night-mode'));
-            clearBtn.addEventListener('click', () => {
-                if(confirm("Clear all text?")) { content.innerText = ''; localStorage.setItem('monograph_draft', ''); }
-            });
-            content.addEventListener('focus', () => content.blur());
-            
-            const saved = localStorage.getItem('monograph_draft');
-            if (saved) content.innerText = saved;
+        // --- NIGHT LIGHT ---
+        nightBtn.addEventListener('click', () => {
+            document.body.classList.toggle('night-mode');
+            const isNight = document.body.classList.contains('night-mode');
+            nightBtn.innerText = isNight ? '☀️ Day' : '💡 Light';
         });
+
+        // --- INITIALIZATION ---
+        window.addEventListener('load', () => {
+            loadDraft();
+            textArea.focus();
+        });
+
     </script>
 </body>
 </html>
