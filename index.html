@@ -14,22 +14,18 @@
             font-family: 'Courier New', Courier, monospace; display: flex; flex-direction: column;
             height: 100vh; overflow: hidden; transition: background-color 0.3s;
         }
-        /* Night Mode */
         body.night-mode { --bg-color: #1a1a1a; --paper-color: #222; --text-color: #ffcc00; --key-bg: #333; --key-shadow: #111; }
-        
         #paper-container {
             flex: 1; overflow-y: auto; padding: 20px 15px 150px 15px;
             background-color: var(--paper-color); margin: 10px; border-radius: 8px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.1); transition: background-color 0.3s;
-            display: flex; flex-direction: column-reverse; /* Receipt style scrolling */
+            display: flex; flex-direction: column-reverse;
         }
         #text-content {
             white-space: pre-wrap; word-wrap: break-word; outline: none; font-size: 1.2rem;
             line-height: 1.6; flex-grow: 1; min-height: 100%; caret-color: var(--accent-color);
         }
         #text-content:empty:before { content: "Start typing..."; color: #999; pointer-events: none; }
-
-        /* Custom Keyboard */
         #keyboard {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--key-bg);
             padding: 8px 5px 20px 5px; display: flex; flex-direction: column; gap: 6px;
@@ -47,8 +43,6 @@
         .key:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--key-shadow); background: var(--key-active); }
         .key.special { background: var(--bg-color); font-size: 0.9rem; flex: 1.5; }
         .key.space { flex: 3; max-width: none; }
-
-        /* Top Controls */
         #toolbar { display: flex; justify-content: space-between; padding: 10px 15px; background: var(--bg-color); }
         .btn {
             background: var(--paper-color); border: 1px solid var(--key-shadow); padding: 8px 16px;
@@ -63,11 +57,9 @@
         <button class="btn" id="night-mode-btn">💡 Night Light</button>
         <button class="btn" id="clear-btn">🗑️ Clear</button>
     </div>
-
     <div id="paper-container">
         <div id="text-content" contenteditable="true" spellcheck="false"></div>
     </div>
-
     <div id="keyboard">
         <div class="key-row">
             <div class="key" data-key="q">q</div><div class="key" data-key="w">w</div><div class="key" data-key="e">e</div>
@@ -93,7 +85,6 @@
             <div class="key special" data-key="return">↵</div>
         </div>
     </div>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const content = document.getElementById('text-content');
@@ -101,20 +92,10 @@
             const keys = document.querySelectorAll('.key');
             const nightBtn = document.getElementById('night-mode-btn');
             const clearBtn = document.getElementById('clear-btn');
-            
             let isShift = false;
-            let isNumeric = false;
 
-            // --- Haptics & Sound ---
             function triggerFeedback() {
-                // Haptic Feedback
-                if (navigator.vibrate) {
-                    navigator.vibrate(10); // 10ms vibration for a tactile click
-                } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) {
-                    window.Capacitor.Plugins.Haptics.impact({ style: 'LIGHT' });
-                }
-
-                // Sound Feedback (Uses Web Audio API to generate a click)
+                if (navigator.vibrate) navigator.vibrate(10);
                 try {
                     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     const oscillator = audioCtx.createOscillator();
@@ -122,97 +103,53 @@
                     oscillator.connect(gainNode);
                     gainNode.connect(audioCtx.destination);
                     oscillator.type = 'square';
-                    oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // Low thud
+                    oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
                     gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
                     oscillator.start();
                     oscillator.stop(audioCtx.currentTime + 0.05);
-                } catch (e) { console.log("Audio not supported", e); }
+                } catch (e) {}
             }
 
-            // --- Keyboard Logic ---
             keys.forEach(key => {
-                key.addEventListener('touchstart', (e) => {
+                const handleKeyPress = (e) => {
                     e.preventDefault();
+                    triggerFeedback();
                     const keyVal = key.getAttribute('data-key');
-                    handleKeyPress(keyVal);
-                });
-                // For desktop testing
-                key.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    const keyVal = key.getAttribute('data-key');
-                    handleKeyPress(keyVal);
-                });
-            });
-
-            function handleKeyPress(key) {
-                triggerFeedback();
-                if (key === 'shift') {
-                    isShift = !isShift;
-                    updateKeyLabels();
-                } else if (key === 'backspace') {
-                    document.execCommand('delete', false, null);
-                } else if (key === 'return') {
-                    document.execCommand('insertText', false, '\n');
-                } else if (key === '123') {
-                    isNumeric = !isNumeric;
-                    toggleNumericLayout();
-                } else if (key === ' ') {
-                    document.execCommand('insertText', false, ' ');
-                } else {
-                    let char = key;
-                    if (isShift) { char = char.toUpperCase(); isShift = false; updateKeyLabels(); }
-                    document.execCommand('insertText', false, char);
-                }
-                saveToBox();
-                // Receipt style scrolling
-                paperContainer.scrollTop = paperContainer.scrollHeight;
-            }
-
-            function updateKeyLabels() {
-                keys.forEach(k => {
-                    const keyVal = k.getAttribute('data-key');
-                    if (keyVal.length === 1 && keyVal.match(/[a-z]/i)) {
-                        k.textContent = isShift ? keyVal.toUpperCase() : keyVal.toLowerCase();
+                    if (keyVal === 'shift') {
+                        isShift = !isShift;
+                        keys.forEach(k => {
+                            const kv = k.getAttribute('data-key');
+                            if (kv.length === 1 && kv.match(/[a-z]/i)) {
+                                k.textContent = isShift ? kv.toUpperCase() : kv.toLowerCase();
+                            }
+                        });
+                    } else if (keyVal === 'backspace') {
+                        document.execCommand('delete', false, null);
+                    } else if (keyVal === 'return') {
+                        document.execCommand('insertText', false, '\n');
+                    } else if (keyVal === ' ') {
+                        document.execCommand('insertText', false, ' ');
+                    } else {
+                        let char = keyVal;
+                        if (isShift) { char = char.toUpperCase(); isShift = false; }
+                        document.execCommand('insertText', false, char);
                     }
-                });
-            }
-
-            function toggleNumericLayout() {
-                // Simple toggle just for demonstration; a full implementation would swap the whole layout
-                alert("Numeric layout toggled (placeholder)");
-            }
-
-            // --- The Box (LocalStorage) ---
-            function saveToBox() {
-                localStorage.setItem('monograph_draft', content.innerText);
-            }
-
-            function loadFromBox() {
-                const saved = localStorage.getItem('monograph_draft');
-                if (saved) { content.innerText = saved; }
-            }
-
-            // --- Night Mode ---
-            nightBtn.addEventListener('click', () => {
-                document.body.classList.toggle('night-mode');
+                    localStorage.setItem('monograph_draft', content.innerText);
+                    paperContainer.scrollTop = paperContainer.scrollHeight;
+                };
+                key.addEventListener('touchstart', handleKeyPress);
+                key.addEventListener('mousedown', handleKeyPress);
             });
 
-            // --- Clear Button ---
+            nightBtn.addEventListener('click', () => document.body.classList.toggle('night-mode'));
             clearBtn.addEventListener('click', () => {
-                if(confirm("Clear all text? This cannot be undone.")) {
-                    content.innerText = '';
-                    saveToBox();
-                }
+                if(confirm("Clear all text?")) { content.innerText = ''; localStorage.setItem('monograph_draft', ''); }
             });
-
-            // Prevent native keyboard from showing up on mobile
-            content.addEventListener('focus', () => {
-                content.blur(); // Keep focus logic but prevent native keyboard
-            });
-
-            // Initialize
-            loadFromBox();
+            content.addEventListener('focus', () => content.blur());
+            
+            const saved = localStorage.getItem('monograph_draft');
+            if (saved) content.innerText = saved;
         });
     </script>
 </body>
