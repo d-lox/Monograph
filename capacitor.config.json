@@ -1,9 +1,6 @@
 {
-  "appId": "com.yourname.monograph",
+  "appId": "com.dlox.monograph",
   "appName": "Monograph",
   "webDir": "www",
-  "bundledWebRuntime": false,
-  "server": {
-    "androidScheme": "https"
-  }
+  "bundledWebRuntime": false
 }
