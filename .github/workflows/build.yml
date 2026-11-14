@@ -21,10 +21,8 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Initialize Capacitor Android Project
-        run: |
-          npx cap init Monograph com.monograph.app --web-dir . --yes
-          npx cap add android
+      - name: Add Capacitor Android Platform
+        run: npx cap add android
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
