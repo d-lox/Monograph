@@ -1,6 +1,6 @@
 {
-  "appId": "com.typewriter.app",
-  "appName": "Platen",
-  "webDir": ".",
-  "bundledWebRuntime": false
+  "appId": "com.monograph.app",
+  "appName": "Monograph",
+  "webDir": "www"
 }
+
